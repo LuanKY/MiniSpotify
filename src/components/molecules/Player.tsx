@@ -18,8 +18,8 @@ const PlayerContainer = styled.div`
   border-top: 1px solid ${({ theme }) => theme.ui_bg_hover};
 
   @media (max-width: 768px) {
-    flex-wrap: wrap; // Permite que os itens quebrem a linha
-    justify-content: center; // Centraliza os itens quando quebram
+    flex-wrap: wrap; 
+    justify-content: center; 
     padding: 1rem;
   }
 `;
@@ -34,9 +34,9 @@ const PlayerCenter = styled.div`
   margin: 0 1rem;
 
   @media (max-width: 768px) {
-    width: 100%; // Ocupa a largura total
-    margin: 0.5rem 0 0 0; // Adiciona espaço acima (abaixo do TrackInfo)
-    order: 2; // Garante que venha depois do TrackInfo
+    width: 100%; 
+    margin: 0.5rem 0 0 0; 
+    order: 2; 
   }
 `;
 
@@ -48,9 +48,9 @@ const TrackInfoContainer = styled.div`
 
   @media (max-width: 768px) {
     min-width: auto;
-    flex-basis: 100%; // Ocupa a primeira linha inteira
+    flex-basis: 100%; 
     justify-content: center;
-    order: 1; // Garante que venha primeiro
+    order: 1; 
     margin-bottom: 0.5rem;
   }
 `;
@@ -58,7 +58,7 @@ const TrackInfoContainer = styled.div`
 const RightSpacer = styled.div`
   min-width: 200px;
   @media (max-width: 768px) {
-    display: none; // Esconde no mobile
+    display: none; 
   }
 `;
 

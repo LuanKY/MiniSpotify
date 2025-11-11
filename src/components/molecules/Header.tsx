@@ -7,7 +7,7 @@ import { DownloadIcon, FolderIcon, MoonIcon, SunIcon } from '../atoms/Icons';
 const StyledHeader = styled.header`
     display: flex;
     align-items: center;
-    justify-content: space-between; // Separa o botão dos ícones
+    justify-content: space-between; 
     padding: 1rem 1.5rem;
     background: ${({ theme }) => theme.ui_bg};
     border-bottom: 1px solid ${({ theme }) => theme.ui_bg_hover};
@@ -16,21 +16,21 @@ const StyledHeader = styled.header`
 const HeaderControls = styled.div`
     display: flex;
     align-items: center;
-    gap: 0.5rem; // Diminui o espaço entre os ícones
+    gap: 0.5rem; 
 `;
 
 const DesktopButton = styled(Button)`
     @media (max-width: 600px) {
-        display: none; // Esconde no mobile
+        display: none; 
     }
 `;
 
 const MobileButton = styled(IconButton)`
-    display: none; // Escondido no desktop
+    display: none; 
     
     @media (max-width: 600px) {
-        display: flex; // Aparece no mobile
-        background-color: ${({ theme }) => theme.accent}; // Mesmo estilo do botão principal
+        display: flex; 
+        background-color: ${({ theme }) => theme.accent}; 
         color: white;
         
         &:hover {

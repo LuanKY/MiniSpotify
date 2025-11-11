@@ -2,11 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import styled from 'styled-components';
 import { useGoogleAPIs } from '../hooks/useGoogleAPIs';
 import { fetchSongsFromFolder, fetchAudioBlobUrl, Track } from '../services/drive';
-
 import { Header } from '../components/molecules/Header';
 import { Playlist } from '../components/molecules/Playlist';
 import { Player } from '../components/molecules/Player';
-
 import { Text } from '../components/atoms/Text';
 import { Button } from '../components/atoms/Button';
 import { IconButton } from '../components/atoms/IconButton';
@@ -27,19 +25,16 @@ interface HomePageProps {
 
 export const HomePage: React.FC<HomePageProps> = ({ toggleTheme, themeName }) => {
     
-    // MUDANÇA 1: Carregar a playlist (tracks) do localStorage
     const [tracks, setTracks] = useState<Track[]>(() => {
         const savedTracks = localStorage.getItem('miniSpotify_tracks');
         return savedTracks ? JSON.parse(savedTracks) : [];
     });
     
-    // MUDANÇA 2: Carregar o último índice de música tocado do localStorage
     const [currentTrackIndex, setCurrentTrackIndex] = useState<number | null>(() => {
         const savedIndex = localStorage.getItem('miniSpotify_lastTrackIndex');
         return savedIndex ? JSON.parse(savedIndex) : null;
     });
 
-    // O estado 'isPlaying' começa como 'false' (pausado), como você pediu.
     const [isPlaying, setIsPlaying] = useState(false);
     const [progress, setProgress] = useState(0);
     const [duration, setDuration] = useState(0);
@@ -63,7 +58,6 @@ export const HomePage: React.FC<HomePageProps> = ({ toggleTheme, themeName }) =>
     const audioRef = useRef<HTMLAudioElement>(null);
     const trackUrlCache = useRef<Map<string, string>>(new Map());
 
-    // MUDANÇA 3: Função de logout agora limpa tudo
     const handleLogout = () => {
         localStorage.removeItem('googleToken');
         localStorage.removeItem('miniSpotify_tracks');
@@ -96,26 +90,25 @@ export const HomePage: React.FC<HomePageProps> = ({ toggleTheme, themeName }) =>
 
     const pickerCallback = (data: any) => { if (data.action === window.google.picker.Action.PICKED && data.docs?.[0]) handleFetchSongs(data.docs[0].id); };
 
-    // MUDANÇA 4: Salvar a playlist e limpar o índice ao buscar uma nova pasta
     const handleFetchSongs = async (folderId: string) => {
         setIsPlaylistLoading(true);
         setTracks([]);
-        setCurrentTrackIndex(null); // Limpa o índice atual
-        localStorage.removeItem('miniSpotify_lastTrackIndex'); // Limpa o índice salvo
+        setCurrentTrackIndex(null); 
+        localStorage.removeItem('miniSpotify_lastTrackIndex'); 
         try {
             const files = await fetchSongsFromFolder(folderId);
             if (files.length > 0) {
                 setTracks(files);
-                localStorage.setItem('miniSpotify_tracks', JSON.stringify(files)); // Salva a nova lista
+                localStorage.setItem('miniSpotify_tracks', JSON.stringify(files)); 
             } else {
                 alert("Nenhuma música encontrada na pasta selecionada.");
-                localStorage.removeItem('miniSpotify_tracks'); // Limpa a lista salva
+                localStorage.removeItem('miniSpotify_tracks'); 
             }
         } catch (error: any) {
             console.error("Erro ao buscar músicas:", error);
             if (error?.result?.error?.code === 401) {
                 alert("Sua sessão expirou.");
-                handleLogout(); // handleLogout já limpa tudo
+                handleLogout(); 
             } else alert("Não foi possível buscar as músicas.");
         }
         setIsPlaylistLoading(false);
@@ -158,7 +151,6 @@ export const HomePage: React.FC<HomePageProps> = ({ toggleTheme, themeName }) =>
         else if (!isPlaying && !audio.paused) audio.pause();
     }, [isPlaying]);
 
-    // MUDANÇA 5: Salvar o índice da música sempre que ele mudar
     useEffect(() => {
         if (currentTrackIndex !== null) {
             localStorage.setItem('miniSpotify_lastTrackIndex', JSON.stringify(currentTrackIndex));
