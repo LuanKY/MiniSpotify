@@ -3,9 +3,9 @@ import styled from 'styled-components';
 import { useGoogleAPIs } from '../hooks/useGoogleAPIs';
 import { fetchSongsFromFolder, fetchAudioBlobUrl, Track } from '../services/drive';
 
-import { Header } from '../components/organisms/Header';
-import { Playlist } from '../components/organisms/Playlist';
-import { Player } from '../components/organisms/Player';
+import { Header } from '../components/molecules/Header';
+import { Playlist } from '../components/molecules/Playlist';
+import { Player } from '../components/molecules/Player';
 
 import { Text } from '../components/atoms/Text';
 import { Button } from '../components/atoms/Button';
@@ -16,6 +16,7 @@ import { DownloadIcon, MoonIcon, SunIcon } from '../components/atoms/Icons';
 const AppContainer = styled.div`display: flex; flex-direction: column; height: 100vh; width: 100vw;`;
 const FullScreenOverlay = styled.div`position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: ${({ theme }) => theme.body}; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1.5rem; z-index: 100; padding: 2rem; text-align: center;`;
 const HeaderControls = styled.div`display: flex; align-items: center; gap: 1rem; position: absolute; top: 1.5rem; right: 1.5rem; z-index: 10;`;
+const ResponsiveTitle = styled(Text)`font-size: 2rem; @media (max-width: 480px) { font-size: 1.5rem; }`;
 
 const SCOPES = 'https://www.googleapis.com/auth/drive.readonly';
 
@@ -25,26 +26,64 @@ interface HomePageProps {
 }
 
 export const HomePage: React.FC<HomePageProps> = ({ toggleTheme, themeName }) => {
-    const [tracks, setTracks] = useState<Track[]>([]);
-    const [currentTrackIndex, setCurrentTrackIndex] = useState<number | null>(null);
+    
+    // MUDANÇA 1: Carregar a playlist (tracks) do localStorage
+    const [tracks, setTracks] = useState<Track[]>(() => {
+        const savedTracks = localStorage.getItem('miniSpotify_tracks');
+        return savedTracks ? JSON.parse(savedTracks) : [];
+    });
+    
+    // MUDANÇA 2: Carregar o último índice de música tocado do localStorage
+    const [currentTrackIndex, setCurrentTrackIndex] = useState<number | null>(() => {
+        const savedIndex = localStorage.getItem('miniSpotify_lastTrackIndex');
+        return savedIndex ? JSON.parse(savedIndex) : null;
+    });
+
+    // O estado 'isPlaying' começa como 'false' (pausado), como você pediu.
     const [isPlaying, setIsPlaying] = useState(false);
     const [progress, setProgress] = useState(0);
     const [duration, setDuration] = useState(0);
     const [currentTime, setCurrentTime] = useState(0);
-    const [accessToken, setAccessToken] = useState<string | null>(null);
     
+    const [accessToken, setAccessToken] = useState<string | null>(() => {
+        const storedTokenData = localStorage.getItem('googleToken');
+        if (!storedTokenData) return null;
+        try {
+            const tokenData = JSON.parse(storedTokenData);
+            if (tokenData.expiry > Date.now()) return tokenData.token;
+        } catch (e) { console.error("Falha ao ler token salvo:", e); }
+        localStorage.removeItem('googleToken');
+        return null;
+    });
+
     const [isPlaylistLoading, setIsPlaylistLoading] = useState(false);
     const [isTrackLoading, setIsTrackLoading] = useState(false);
-
     const [apiMessage, setApiMessage] = useState<string>("Carregando APIs do Google...");
     const [installPromptEvent, setInstallPromptEvent] = useState<any>(null);
     const audioRef = useRef<HTMLAudioElement>(null);
     const trackUrlCache = useRef<Map<string, string>>(new Map());
 
-    const handleAuth = (tokenResponse: any) => { if (tokenResponse.access_token) setAccessToken(tokenResponse.access_token); };
+    // MUDANÇA 3: Função de logout agora limpa tudo
+    const handleLogout = () => {
+        localStorage.removeItem('googleToken');
+        localStorage.removeItem('miniSpotify_tracks');
+        localStorage.removeItem('miniSpotify_lastTrackIndex');
+        setAccessToken(null);
+        setTracks([]);
+        setCurrentTrackIndex(null);
+    };
+
+    const handleAuth = (tokenResponse: any) => {
+        if (tokenResponse.access_token) {
+            const expiry = Date.now() + (tokenResponse.expires_in * 1000);
+            localStorage.setItem('googleToken', JSON.stringify({ token: tokenResponse.access_token, expiry: expiry }));
+            setAccessToken(tokenResponse.access_token);
+        }
+    };
+
     const { ready: apiReady, error: apiError } = useGoogleAPIs(handleAuth);
 
-    useEffect(() => { if (apiError) setApiMessage(apiError); else if (apiReady) setApiMessage("APIs prontas. Por favor, conecte-se."); }, [apiReady, apiError]);
+    useEffect(() => { if (apiError) setApiMessage(apiError); else if (apiReady) setApiMessage("Tudo pronto. Por favor, conecte-se."); }, [apiReady, apiError]);
 
     const handleLogin = () => { if (apiReady && window.tokenClient) window.tokenClient.requestAccessToken({ prompt: 'consent' }); };
     
@@ -57,15 +96,27 @@ export const HomePage: React.FC<HomePageProps> = ({ toggleTheme, themeName }) =>
 
     const pickerCallback = (data: any) => { if (data.action === window.google.picker.Action.PICKED && data.docs?.[0]) handleFetchSongs(data.docs[0].id); };
 
+    // MUDANÇA 4: Salvar a playlist e limpar o índice ao buscar uma nova pasta
     const handleFetchSongs = async (folderId: string) => {
         setIsPlaylistLoading(true);
         setTracks([]);
+        setCurrentTrackIndex(null); // Limpa o índice atual
+        localStorage.removeItem('miniSpotify_lastTrackIndex'); // Limpa o índice salvo
         try {
             const files = await fetchSongsFromFolder(folderId);
-            if (files.length > 0) setTracks(files); else alert("Nenhuma música encontrada na pasta selecionada.");
+            if (files.length > 0) {
+                setTracks(files);
+                localStorage.setItem('miniSpotify_tracks', JSON.stringify(files)); // Salva a nova lista
+            } else {
+                alert("Nenhuma música encontrada na pasta selecionada.");
+                localStorage.removeItem('miniSpotify_tracks'); // Limpa a lista salva
+            }
         } catch (error: any) {
             console.error("Erro ao buscar músicas:", error);
-            if (error?.result?.error?.code === 401) { alert("Sua sessão expirou."); setAccessToken(null); } else alert("Não foi possível buscar as músicas.");
+            if (error?.result?.error?.code === 401) {
+                alert("Sua sessão expirou.");
+                handleLogout(); // handleLogout já limpa tudo
+            } else alert("Não foi possível buscar as músicas.");
         }
         setIsPlaylistLoading(false);
     };
@@ -88,8 +139,13 @@ export const HomePage: React.FC<HomePageProps> = ({ toggleTheme, themeName }) =>
                     audio.src = blobUrl;
                     if (isPlaying) await audio.play();
                 }
-            } catch (error) { console.error("Erro ao carregar e tocar música:", error); }
-            finally { if (isActive) setIsTrackLoading(false); }
+            } catch (error: any) {
+                console.error("Erro ao carregar e tocar música:", error.message);
+                if (error.message.includes('401')) {
+                    alert("Sua sessão expirou. Por favor, faça login novamente.");
+                    handleLogout();
+                }
+            } finally { if (isActive) setIsTrackLoading(false); }
         };
         loadAndPlayAudio();
         return () => { isActive = false; }
@@ -101,6 +157,13 @@ export const HomePage: React.FC<HomePageProps> = ({ toggleTheme, themeName }) =>
         if (isPlaying && audio.src && audio.paused) audio.play().catch(e => console.error("Erro ao dar play:", e));
         else if (!isPlaying && !audio.paused) audio.pause();
     }, [isPlaying]);
+
+    // MUDANÇA 5: Salvar o índice da música sempre que ele mudar
+    useEffect(() => {
+        if (currentTrackIndex !== null) {
+            localStorage.setItem('miniSpotify_lastTrackIndex', JSON.stringify(currentTrackIndex));
+        }
+    }, [currentTrackIndex]);
     
     const handlePlayPause = () => { if (currentTrackIndex === null && tracks.length > 0) { setCurrentTrackIndex(0); } setIsPlaying(!isPlaying); };
     const handleTrackSelect = (index: number) => { if (index === currentTrackIndex) { setIsPlaying(!isPlaying); } else { setCurrentTrackIndex(index); setIsPlaying(true); } };
@@ -130,7 +193,7 @@ export const HomePage: React.FC<HomePageProps> = ({ toggleTheme, themeName }) =>
                     {installPromptEvent && <IconButton onClick={handleInstallClick} title="Instalar App"><DownloadIcon /></IconButton>}
                     <IconButton onClick={toggleTheme}>{themeName === 'light' ? <MoonIcon /> : <SunIcon />}</IconButton>
                 </HeaderControls>
-                <Text size="2rem" $weight="700">Bem-vindo ao MiniSpotify</Text>
+                <ResponsiveTitle $weight="700">Bem-vindo ao MiniSpotify</ResponsiveTitle>
                 <Text muted>Conecte-se com sua conta Google para ouvir suas músicas do Drive.</Text>
                 <Button onClick={handleLogin} disabled={!apiReady}>{apiReady ? 'Conectar com Google Drive' : 'Carregando...'}</Button>
                 <Text size="0.8rem" muted>{apiMessage}</Text>
@@ -141,12 +204,14 @@ export const HomePage: React.FC<HomePageProps> = ({ toggleTheme, themeName }) =>
     
     return (
         <AppContainer>
-             <HeaderControls>
-                {installPromptEvent && <IconButton onClick={handleInstallClick} title="Instalar App"><DownloadIcon /></IconButton>}
-                <IconButton onClick={toggleTheme}>{themeName === 'light' ? <MoonIcon /> : <SunIcon />}</IconButton>
-            </HeaderControls>
+             <Header 
+                onSelectFolder={showPicker}
+                onInstall={handleInstallClick}
+                onToggleTheme={toggleTheme}
+                themeName={themeName}
+                showInstallButton={!!installPromptEvent}
+             />
             <audio ref={audioRef} onTimeUpdate={onTimeUpdate} onLoadedMetadata={onLoadedMetadata} onEnded={handleNext} />
-            <Header onSelectFolder={showPicker} />
             
             {isPlaylistLoading ? (
                 <div style={{flexGrow: 1, display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
@@ -159,7 +224,6 @@ export const HomePage: React.FC<HomePageProps> = ({ toggleTheme, themeName }) =>
                     onTrackSelect={handleTrackSelect}
                 />
             )}
-
             <Player 
                 track={currentTrack} 
                 isPlaying={isPlaying} 

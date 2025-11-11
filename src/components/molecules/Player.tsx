@@ -8,9 +8,59 @@ import { ProgressBarContainer, ProgressFill } from '../atoms/ProgressBar';
 import { Spinner } from '../atoms/Spinner';
 import { Text } from '../atoms/Text';
 
-const PlayerContainer = styled.div`display: flex; align-items: center; justify-content: space-between; padding: 1rem 1.5rem; background-color: ${({ theme }) => theme.ui_bg}; box-shadow: ${({ theme }) => theme.shadow}; border-top: 1px solid ${({ theme }) => theme.ui_bg_hover};`;
-const PlayerCenter = styled.div`flex-grow: 1; display: flex; flex-direction: column; align-items: center; gap: 0.5rem; max-width: 600px; margin: 0 1rem;`;
-const TrackInfoContainer = styled.div`min-width: 200px; display: flex; align-items: center; gap: 1rem;`;
+const PlayerContainer = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.5rem;
+  background-color: ${({ theme }) => theme.ui_bg};
+  box-shadow: ${({ theme }) => theme.shadow};
+  border-top: 1px solid ${({ theme }) => theme.ui_bg_hover};
+
+  @media (max-width: 768px) {
+    flex-wrap: wrap; // Permite que os itens quebrem a linha
+    justify-content: center; // Centraliza os itens quando quebram
+    padding: 1rem;
+  }
+`;
+
+const PlayerCenter = styled.div`
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  max-width: 600px;
+  margin: 0 1rem;
+
+  @media (max-width: 768px) {
+    width: 100%; // Ocupa a largura total
+    margin: 0.5rem 0 0 0; // Adiciona espaço acima (abaixo do TrackInfo)
+    order: 2; // Garante que venha depois do TrackInfo
+  }
+`;
+
+const TrackInfoContainer = styled.div`
+  min-width: 200px;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+
+  @media (max-width: 768px) {
+    min-width: auto;
+    flex-basis: 100%; // Ocupa a primeira linha inteira
+    justify-content: center;
+    order: 1; // Garante que venha primeiro
+    margin-bottom: 0.5rem;
+  }
+`;
+
+const RightSpacer = styled.div`
+  min-width: 200px;
+  @media (max-width: 768px) {
+    display: none; // Esconde no mobile
+  }
+`;
 
 interface PlayerProps {
     track: Track | null; isPlaying: boolean; progress: number; duration: number; currentTime: number;
@@ -29,6 +79,7 @@ export const Player: React.FC<PlayerProps> = ({ track, isPlaying, progress, dura
                     {track && <Text size="0.8rem" muted>Música do Drive</Text>}
                 </div>
             </TrackInfoContainer>
+
             <PlayerCenter>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1rem' }}>
                     <IconButton onClick={onPrev} disabled={!track}><SkipPreviousIcon /></IconButton>
@@ -43,7 +94,8 @@ export const Player: React.FC<PlayerProps> = ({ track, isPlaying, progress, dura
                     <Text size="0.8rem">{formatTime(duration)}</Text>
                 </div>
             </PlayerCenter>
-            <div style={{ minWidth: '200px' }}></div>
+
+            <RightSpacer />
         </PlayerContainer>
     );
 };

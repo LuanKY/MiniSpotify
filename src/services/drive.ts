@@ -42,9 +42,11 @@ export const fetchAudioBlobUrl = async (trackId: string, accessToken: string): P
     const response = await fetch(url, {
         headers: { 'Authorization': `Bearer ${accessToken}` }
     });
+    
     if (!response.ok) {
-        throw new Error(`Falha ao buscar áudio: ${response.statusText}`);
+        throw new Error(`Falha ao buscar áudio: ${response.status} ${response.statusText}`);
     }
+    
     const blob = await response.blob();
     return URL.createObjectURL(blob);
 };

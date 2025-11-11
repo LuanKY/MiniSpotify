@@ -28,4 +28,9 @@ export const Button = styled.button`
     color: ${({ theme }) => theme.highlight};
     cursor: not-allowed;
   }
+
+  @media (max-width: 480px) {
+    padding: 0.75rem 1rem;
+    font-size: 0.9rem;
+  }
 `;
