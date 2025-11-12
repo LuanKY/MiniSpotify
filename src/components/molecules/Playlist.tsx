@@ -3,7 +3,12 @@ import styled from 'styled-components';
 import { Track } from '../../services/drive';
 import { Text } from '../atoms/Text';
 
-const PlaylistContainer = styled.div`flex-grow: 1; overflow-y: auto; padding: 2rem;`;
+const PlaylistContainer = styled.div`
+  flex-grow: 1;
+  overflow-y: auto;
+  overflow-x: hidden; 
+  padding: 2rem;
+`;
 
 const PlaylistItem = styled.div<{ $isActive: boolean }>`
   display: flex;
@@ -16,7 +21,20 @@ const PlaylistItem = styled.div<{ $isActive: boolean }>`
   &:hover {
     background-color: ${({ theme }) => theme.ui_bg_hover};
   }
+  width: 100%; 
 `;
+
+const TrackTitle = styled(Text)`
+  white-space: nowrap;     
+  overflow: hidden;          
+  text-overflow: ellipsis;  
+  min-width: 0;             
+`;
+
+const TrackNumber = styled(Text)`
+  flex-shrink: 0; 
+`;
+
 
 interface PlaylistProps {
     tracks: Track[];
@@ -37,8 +55,8 @@ export const Playlist: React.FC<PlaylistProps> = ({ tracks, currentTrack, onTrac
         <PlaylistContainer>
             {tracks.map((track, index) => (
                 <PlaylistItem key={track.id} $isActive={currentTrack?.id === track.id} onClick={() => onTrackSelect(index)}>
-                    <Text $weight="500">{index + 1}.</Text>
-                    <Text>{track.name.replace(/\.mp3|\.m4a|\.flac/gi, '')}</Text>
+                    <TrackNumber $weight="500">{index + 1}.</TrackNumber>
+                    <TrackTitle>{track.name.replace(/\.mp3|\.m4a|\.flac/gi, '')}</TrackTitle>
                 </PlaylistItem>
             ))}
         </PlaylistContainer>
