@@ -1,0 +1,1 @@
+{"name":"Mini Spotify","short_name":"MiniSpotify","description":"Seu player de músicas do Google Drive.","start_url":".","display":"standalone","background_color":"#0f172a","theme_color":"#1db954","lang":"en","scope":"/MiniSpotify/","icons":[{"src":"logo.png","sizes":"192x192","type":"image/png"},{"src":"logo.png","sizes":"512x512","type":"image/png"}]}
